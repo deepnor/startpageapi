@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="startpageapi",
-    version="0.1.0",
+    version="1.1.0",
     author="deepnor",
     author_email="nothellnor@gmail.com",
     description="The StartpageAPI is an unofficial Python library that facilitates access to search results from the Startpage.com engine.",
@@ -34,8 +34,8 @@ setup(
     packages=find_packages(),
     python_requires=">=3.7",
     install_requires=[
-        "beautifulsoup4",
-        "lxml",
+        "beautifulsoup4>=4.9.0",
+        "lxml>=4.6.0",
     ],
     keywords="search, startpage, api, web scraping, search engine",
 )

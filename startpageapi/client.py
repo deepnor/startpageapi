@@ -24,7 +24,66 @@ class StartpageAPI:
         self.last_request_time = 0.0
         self.session_id = self._generate_session_id()
         self.aio = AsyncStartpageClient(self)
-    
+
+    def _perform_search_request(self,
+                                query: str,
+                                category: str,
+                                category_for_parser: str,
+                                language: str = "en",
+                                region: str = "all",
+                                safe_search: str = "moderate",
+                                page: int = 1,
+                                results_per_page: int = 10, # Default, will be overridden by specific search types
+                                time_filter: Optional[str] = None,
+                                size: Optional[str] = None,
+                                duration: Optional[str] = None,
+                                latitude: Optional[float] = None,
+                                longitude: Optional[float] = None,
+                                radius: Optional[int] = None,
+                                **kwargs) -> Dict[str, Any]:
+        if not query.strip():
+            raise ValueError("Query cannot be empty")
+
+        params = {
+            "query": query.strip(),
+            "cat": category,
+            "cmd": "process_search",
+            "language": LANGUAGE_CODES.get(language, language),
+            "lui": LANGUAGE_CODES.get(language, language),
+            "pl": REGION_CODES.get(region, region),
+            "startat": str((page - 1) * results_per_page)
+        }
+
+        # Common parameters that might not apply to all search types initially
+        if category not in ["news", "places"]: # news and places don't use ff directly in current setup
+            params["ff"] = SAFE_SEARCH_LEVELS.get(safe_search, "0")
+        
+        if category == "web": # results_per_page for web
+             params["num"] = str(results_per_page)
+
+
+        # Category-specific parameters
+        if time_filter and time_filter != "any" and category in ["web", "video", "news"]:
+            params["with_date"] = TIME_FILTERS.get(time_filter, time_filter)
+        
+        if size and size != "any" and category == "images":
+            params["size"] = IMAGE_SIZES.get(size, size)
+            
+        if duration and duration != "any" and category == "video":
+            params["duration"] = VIDEO_DURATIONS.get(duration, duration)
+            
+        if latitude is not None and longitude is not None and category == "places":
+            params["latitude"] = str(latitude)
+            params["longitude"] = str(longitude)
+            
+        if radius is not None and category == "places":
+            params["radius"] = str(radius)
+
+        params.update(kwargs)
+        
+        html = self._make_request(SEARCH_URL, params)
+        return StartpageParser.parse_search_results(html, category_for_parser)
+
     def _generate_session_id(self) -> str:
         return f"sp_{int(time.time())}_{random.randint(1000, 9999)}"
     
@@ -88,28 +147,18 @@ class StartpageAPI:
                results_per_page: int = 10,
                **kwargs) -> Dict[str, Any]:
         
-        if not query.strip():
-            raise ValueError("Query cannot be empty")
-        
-        params = {
-            "query": query.strip(),
-            "cat": "web",
-            "cmd": "process_search",
-            "language": LANGUAGE_CODES.get(language, language),
-            "lui": LANGUAGE_CODES.get(language, language),
-            "pl": REGION_CODES.get(region, region),
-            "ff": SAFE_SEARCH_LEVELS.get(safe_search, "0"),
-            "startat": str((page - 1) * results_per_page),
-            "num": str(results_per_page)
-        }
-        
-        if time_filter and time_filter != "any":
-            params["with_date"] = TIME_FILTERS.get(time_filter, time_filter)
-        
-        params.update(kwargs)
-        
-        html = self._make_request(SEARCH_URL, params)
-        return StartpageParser.parse_search_results(html, "web")
+        return self._perform_search_request(
+            query=query,
+            category="web",
+            category_for_parser="web",
+            language=language,
+            region=region,
+            safe_search=safe_search,
+            page=page,
+            results_per_page=results_per_page,
+            time_filter=time_filter,
+            **kwargs
+        )
     
     def images_search(self,
                      query: str,
@@ -120,27 +169,18 @@ class StartpageAPI:
                      page: int = 1,
                      **kwargs) -> Dict[str, Any]:
         
-        if not query.strip():
-            raise ValueError("Query cannot be empty")
-        
-        params = {
-            "query": query.strip(),
-            "cat": "images",
-            "cmd": "process_search", 
-            "language": LANGUAGE_CODES.get(language, language),
-            "lui": LANGUAGE_CODES.get(language, language),
-            "pl": REGION_CODES.get(region, region),
-            "ff": SAFE_SEARCH_LEVELS.get(safe_search, "0"),
-            "startat": str((page - 1) * 20)
-        }
-        
-        if size and size != "any":
-            params["size"] = IMAGE_SIZES.get(size, size)
-        
-        params.update(kwargs)
-        
-        html = self._make_request(SEARCH_URL, params)
-        return StartpageParser.parse_search_results(html, "images")
+        return self._perform_search_request(
+            query=query,
+            category="images",
+            category_for_parser="images",
+            language=language,
+            region=region,
+            safe_search=safe_search,
+            page=page,
+            results_per_page=20,  # Default for images
+            size=size,
+            **kwargs
+        )
     
     def videos_search(self,
                      query: str,
@@ -152,30 +192,19 @@ class StartpageAPI:
                      page: int = 1,
                      **kwargs) -> Dict[str, Any]:
         
-        if not query.strip():
-            raise ValueError("Query cannot be empty")
-        
-        params = {
-            "query": query.strip(),
-            "cat": "video",
-            "cmd": "process_search",
-            "language": LANGUAGE_CODES.get(language, language), 
-            "lui": LANGUAGE_CODES.get(language, language),
-            "pl": REGION_CODES.get(region, region),
-            "ff": SAFE_SEARCH_LEVELS.get(safe_search, "0"),
-            "startat": str((page - 1) * 10)
-        }
-        
-        if duration and duration != "any":
-            params["duration"] = VIDEO_DURATIONS.get(duration, duration)
-            
-        if time_filter and time_filter != "any":
-            params["with_date"] = TIME_FILTERS.get(time_filter, time_filter)
-        
-        params.update(kwargs)
-        
-        html = self._make_request(SEARCH_URL, params)
-        return StartpageParser.parse_search_results(html, "videos")
+        return self._perform_search_request(
+            query=query,
+            category="video",
+            category_for_parser="videos",
+            language=language,
+            region=region,
+            safe_search=safe_search,
+            page=page,
+            results_per_page=10, # Default for videos
+            duration=duration,
+            time_filter=time_filter,
+            **kwargs
+        )
     
     def news_search(self,
                    query: str,
@@ -185,26 +214,19 @@ class StartpageAPI:
                    page: int = 1,
                    **kwargs) -> Dict[str, Any]:
         
-        if not query.strip():
-            raise ValueError("Query cannot be empty")
-        
-        params = {
-            "query": query.strip(),
-            "cat": "news",
-            "cmd": "process_search",
-            "language": LANGUAGE_CODES.get(language, language),
-            "lui": LANGUAGE_CODES.get(language, language), 
-            "pl": REGION_CODES.get(region, region),
-            "startat": str((page - 1) * 10)
-        }
-        
-        if time_filter and time_filter != "any":
-            params["with_date"] = TIME_FILTERS.get(time_filter, time_filter)
-        
-        params.update(kwargs)
-        
-        html = self._make_request(SEARCH_URL, params)
-        return StartpageParser.parse_search_results(html, "news")
+        return self._perform_search_request(
+            query=query,
+            category="news",
+            category_for_parser="news",
+            language=language,
+            region=region,
+            # safe_search is not directly used by news_search,
+            # _perform_search_request handles not adding 'ff' for 'news'
+            page=page,
+            results_per_page=10, # Default for news
+            time_filter=time_filter,
+            **kwargs
+        )
     
     def places_search(self,
                      query: str, 
@@ -216,30 +238,21 @@ class StartpageAPI:
                      page: int = 1,
                      **kwargs) -> Dict[str, Any]:
         
-        if not query.strip():
-            raise ValueError("Query cannot be empty")
-        
-        params = {
-            "query": query.strip(),
-            "cat": "places",
-            "cmd": "process_search",
-            "language": LANGUAGE_CODES.get(language, language),
-            "lui": LANGUAGE_CODES.get(language, language),
-            "pl": REGION_CODES.get(region, region),
-            "startat": str((page - 1) * 10)
-        }
-        
-        if latitude is not None and longitude is not None:
-            params["latitude"] = str(latitude)
-            params["longitude"] = str(longitude)
-            
-        if radius is not None:
-            params["radius"] = str(radius)
-        
-        params.update(kwargs)
-        
-        html = self._make_request(SEARCH_URL, params)
-        return StartpageParser.parse_search_results(html, "places")
+        return self._perform_search_request(
+            query=query,
+            category="places",
+            category_for_parser="places",
+            language=language,
+            region=region,
+            # safe_search is not directly used by places_search,
+            # _perform_search_request handles not adding 'ff' for 'places'
+            page=page,
+            results_per_page=10, # Default for places
+            latitude=latitude,
+            longitude=longitude,
+            radius=radius,
+            **kwargs
+        )
     
     def suggestions(self, query_part: str, language: str = "en") -> List[str]:
         if not query_part.strip():

@@ -86,13 +86,13 @@ VIDEO_DURATIONS = {
 }
 
 ADVANCED_SEARCH_PARAMS = {
-    "sc": "search_source",
-    "sr": "search_results",
-    "sxap": "search_expander_api_path",
-    "qimsn": "query_instant_mode_search_number",
-    "with_date": "time_filter",
-    "abp": "ad_block_plus",
-    "t": "search_type_modifier"
+    "search_source": "sc",
+    "search_results": "sr",
+    "search_expander_api_path": "sxap",
+    "query_instant_mode_search_number": "qimsn",
+    "time_filter": "with_date",
+    "ad_block_plus": "abp",
+    "search_type_modifier": "t"
 }
 
 SEARCH_EXPANDER_PARAMS = {
