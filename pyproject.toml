@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "startpageapi"
-version = "0.1.0"
+version = "1.1.0"
 description = "The StartpageAPI is an unofficial Python library that facilitates access to search results from the Startpage.com engine."
 readme = "README.md"
 authors = [

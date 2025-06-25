@@ -6,7 +6,7 @@ from .exceptions import (
     StartpageRateLimitError
 )
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "deepnor"
 __license__ = "MIT"
 

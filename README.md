@@ -65,7 +65,7 @@ results = api.search("Python programming language")
 # Print results
 for result in results.get('results', []):
     print(f"Title: {result.get('title')}")
-    print(f"Link: {result.get('link')}")
+    print(f"URL: {result.get('url')}")
     print(f"Description: {result.get('description')}")
     print("---")
 ```
@@ -93,7 +93,7 @@ video_results = api.videos_search("documentary", duration="long", time_filter="y
 # Print video results
 for video in video_results.get('results', []):
     print(f"Title: {video.get('title')}")
-    print(f"Video URL: {video.get('link')}")
+    print(f"Video URL: {video.get('url')}")
     print(f"Duration: {video.get('duration')}")
     print("---")
 ```
@@ -107,9 +107,9 @@ news_results = api.news_search("technology", time_filter="week")
 # Print news results
 for news in news_results.get('results', []):
     print(f"Title: {news.get('title')}")
-    print(f"Link: {news.get('link')}")
+    print(f"URL: {news.get('url')}")
     print(f"Source: {news.get('source')}")
-    print(f"Date: {news.get('date')}")
+    print(f"Published Date: {news.get('published_date')}")
     print("---")
 ```
 
@@ -185,7 +185,7 @@ async def main():
     # Print results
     for result in results.get('results', []):
         print(f"Title: {result.get('title')}")
-        print(f"Link: {result.get('link')}")
+        print(f"URL: {result.get('url')}")
         print("---")
 
 # Run the async function
